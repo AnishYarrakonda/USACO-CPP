@@ -1,12 +1,12 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-struct Point {
+struct GridPoint{
     long long x;
     long long y;
 };
 
-struct Region {
+struct TriangleCell {
     long long x1;
     long long y1;
     long long x2;
@@ -14,7 +14,7 @@ struct Region {
     int side;
 };
 
-bool operator<(const Region& a, const Region& b) {
+bool operator<(const TriangleCell& a, const TriangleCell& b) {
     if (a.x1 != b.x1) return a.x1 < b.x1;
     if (a.y1 != b.y1) return a.y1 < b.y1;
     if (a.x2 != b.x2) return a.x2 < b.x2;
@@ -22,185 +22,176 @@ bool operator<(const Region& a, const Region& b) {
     return a.side < b.side;
 }
 
-bool same_region(const Region& a, const Region& b) {
-    return a.x1 == b.x1 && a.y1 == b.y1 &&
-           a.x2 == b.x2 && a.y2 == b.y2 &&
-           a.side == b.side;
+bool isSameCell(const TriangleCell& a, const TriangleCell& b){
+    return a.x1 == b.x1 && a.y1 == b.y1
+        && a.x2 == b.x2 && a.y2 == b.y2
+        && a.side == b.side;
 }
 
-const long long DX[6] = {1, 0, -1, -1, 0, 1};
-const long long DY[6] = {0, 1, 1, 0, -1, -1};
+const long long stepX[6] = {1, 0, -1, -1, 0, 1};
+const long long stepY[6] = {0, 1, 1, 0, -1, -1};
 
-Point add_points(const Point& a, const Point& b) {
-    Point result;
-    result.x = a.x + b.x;
-    result.y = a.y + b.y;
-    return result;
+GridPoint addPoints(const GridPoint& a,const GridPoint& b) {
+    GridPoint out;
+    out.x = a.x + b.x;
+    out.y = a.y + b.y;
+    return out;
 }
 
-Point subtract_points(const Point& a, const Point& b) {
-    Point result;
-    result.x = a.x - b.x;
-    result.y = a.y - b.y;
-    return result;
+GridPoint subPoints(const GridPoint& a, const GridPoint& b) {
+    GridPoint out;
+    out.x = a.x - b.x;
+    out.y = a.y - b.y;
+    return out;
 }
 
-Point direction_point(int i) {
-    Point result;
-    result.x = DX[i];
-    result.y = DY[i];
-    return result;
+GridPoint dirAsPoint(int dirId){
+    GridPoint out;
+    out.x = stepX[dirId];
+    out.y = stepY[dirId];
+    return out;
 }
 
-long long cross_product(const Point& a, const Point& b) {
+long long cross2D(const GridPoint& a, const GridPoint& b){
     return a.x * b.y - a.y * b.x;
 }
 
-bool point_less(const Point& a, const Point& b) {
+bool isEarlierPoint(const GridPoint& a, const GridPoint& b) {
     if (a.x != b.x) return a.x < b.x;
     return a.y < b.y;
 }
 
-int direction_index(const Point& d) {
+int findDirIndex(const GridPoint& v){
     for (int i = 0; i < 6; i++) {
-        if (DX[i] == d.x && DY[i] == d.y) {
+        if (stepX[i] == v.x && stepY[i] == v.y) {
             return i;
         }
     }
     return -1;
 }
 
-Region make_region(Point p, Point q, Point third_vertex) {
-    if (point_less(q, p)) {
+TriangleCell makeCell(GridPoint p, GridPoint q, GridPoint third) {
+    if (isEarlierPoint(q, p)) {
         swap(p, q);
     }
 
-    Point pq = subtract_points(q, p);
-    Point pr = subtract_points(third_vertex, p);
-    long long area_sign = cross_product(pq, pr);
+    GridPoint pq = subPoints(q, p);
+    GridPoint pr = subPoints(third, p);
+    long long signedArea = cross2D(pq, pr);
 
-    Region result;
-    result.x1 = p.x;
-    result.y1 = p.y;
-    result.x2 = q.x;
-    result.y2 = q.y;
-    result.side = (area_sign > 0 ? 0 : 1);
-    return result;
+    TriangleCell out;
+    out.x1 = p.x;
+    out.y1 = p.y;
+    out.x2 = q.x;
+    out.y2 = q.y;
+    out.side = (signedArea > 0 ? 0 : 1);
+    return out;
 }
 
-Point third_vertex_of_triangle(const Region& region) {
-    Point a{region.x1, region.y1};
-    Point b{region.x2, region.y2};
-    Point edge = subtract_points(b, a);
-    int index = direction_index(edge);
+GridPoint getThirdCorner(const TriangleCell& cell){
+    GridPoint a{cell.x1, cell.y1};
+    GridPoint b{cell.x2, cell.y2};
+    GridPoint edgeVec = subPoints(b, a);
+    int dirId = findDirIndex(edgeVec);
 
-    Point third;
-    if (region.side == 0) {
-        third = add_points(a, direction_point((index + 1) % 6));
+    GridPoint third;
+    if (cell.side == 0) {
+        third = addPoints(a, dirAsPoint((dirId + 1) % 6));
     } else {
-        third = add_points(a, direction_point((index + 5) % 6));
+      third = addPoints(a, dirAsPoint((dirId + 5) % 6));
     }
     return third;
 }
 
-void find_neighbors(const Region& current, Region next_regions[3]) {
-    Point a{current.x1, current.y1};
-    Point b{current.x2, current.y2};
-    Point third = third_vertex_of_triangle(current);
+void gatherNeighbors(const TriangleCell& curCell, TriangleCell nextCells[3]) {
+    GridPoint a{curCell.x1, curCell.y1};
+    GridPoint b{curCell.x2, curCell.y2};
+    GridPoint third = getThirdCorner(curCell);
 
-    Region across_shared_edge = current;
-    across_shared_edge.side = 1 - across_shared_edge.side;
+    TriangleCell flipSide = curCell;
+    flipSide.side = 1 - flipSide.side;
 
-    Region across_center_edge_1 = make_region(a, third, b);
-    Region across_center_edge_2 = make_region(b, third, a);
+    TriangleCell viaCenterA = makeCell(a, third, b);
+    TriangleCell viaCenterB = makeCell(b, third, a);
 
-    next_regions[0] = across_shared_edge;
-    next_regions[1] = across_center_edge_1;
-    next_regions[2] = across_center_edge_2;
+    nextCells[0] = flipSide;
+    nextCells[1] = viaCenterA;
+    nextCells[2] = viaCenterB;
 }
 
-Region region_from_input(long long x, long long y, int z) {
-    Point v{x, y};
-    int m = z / 2;
+TriangleCell inputToCell(long long x, long long y, int z) {
+    GridPoint base{x, y};
+    int wedge = z / 2;
 
-    Point p, q, r;
-    if (z % 2 == 0) {
-        p = v;
-        q = add_points(v, direction_point(m));
-        r = add_points(v, direction_point((m + 1) % 6));
+    GridPoint p, q, r;
+    if (!(z & 1)){
+        p = base;
+        q = addPoints(base, dirAsPoint(wedge));
+        r = addPoints(base, dirAsPoint((wedge + 1) % 6));
     } else {
-        p = v;
-        q = add_points(v, direction_point((m + 1) % 6));
-        r = add_points(v, direction_point(m));
+        p = base;
+        q = addPoints(base, dirAsPoint((wedge + 1) % 6));
+        r = addPoints(base, dirAsPoint(wedge));
     }
 
-    return make_region(p, q, r);
+    return makeCell(p, q, r);
 }
 
-int bfs_distance(const Region& start, const Region& target) {
-    if (same_region(start, target)) {
+int bfsDistanceBetween(const TriangleCell& startCell, const TriangleCell& goalCell){
+    if (isSameCell(startCell, goalCell)) {
         return 0;
     }
 
-    map<Region, int> distance_from_start;
-    queue<Region> q;
+    map<TriangleCell, int> dist;
+    queue<TriangleCell> q;
 
-    distance_from_start[start] = 0;
-    q.push(start);
+    dist[startCell] = 0;
+    q.push(startCell);
 
     while (!q.empty()) {
-        Region current = q.front();
+        TriangleCell cur = q.front();
         q.pop();
 
-        int current_distance = distance_from_start[current];
-
-        Region next_regions[3];
-        find_neighbors(current, next_regions);
+        int curDist = dist[cur];
+        TriangleCell nextCells[3];
+        gatherNeighbors(cur, nextCells);
 
         for (int i = 0; i < 3; i++) {
-            Region next_region = next_regions[i];
+            TriangleCell nxt = nextCells[i];
 
-            if (distance_from_start.find(next_region) != distance_from_start.end()) {
+            if (dist.find(nxt) != dist.end()) {
                 continue;
             }
-            if (same_region(next_region, target)) {
-                return current_distance + 1;
+            if (isSameCell(nxt, goalCell)) {
+                return curDist + 1;
             }
 
-            distance_from_start[next_region] = current_distance + 1;
-            q.push(next_region);
+            dist[nxt] = curDist + 1;
+            q.push(nxt);
         }
     }
 
     return -1;
 }
 
-int main() {
+int main(){
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int T;
-    cin >> T;
-    while (T--) {
-        int N;
-        cin >> N;
-        vector<Region> regions(N);
+    int t; cin >> t;
+    while (t--) {
+        int n; cin >> n;
+        vector<TriangleCell> cells(n);
 
-        for (int i = 0; i < N; i++) {
-            long long x, y;
-            int z;
+        for (int i = 0; i < n; i++) {
+            long long x, y; int z;
             cin >> x >> y >> z;
-            regions[i] = region_from_input(x, y, z);
+            cells[i] = inputToCell(x, y, z);
         }
 
-        long long answer = 0;
-        for (int i = 0; i < N; i++) {
-            for (int j = i + 1; j < N; j++) {
-                answer += bfs_distance(regions[i], regions[j]);
-            }
-        }
-
-        cout << answer << '\n';
+        long long pairSum = 0;
+        for (int i = 0; i < n; i++) for (int j = i + 1; j < n; j++) pairSum += bfsDistanceBetween(cells[i], cells[j]);
+        cout << pairSum << '\n';
     }
     return 0;
 }
