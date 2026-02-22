@@ -5,13 +5,13 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-// stores a point
-struct GridPoint{
+// point on lattice
+struct GridPoint {
     long long x;
     long long y;
 };
 
-// stores a traingle cell stucture
+// triangle cell unique id
 struct TriangleCell {
     long long x1;
     long long y1;
@@ -20,7 +20,7 @@ struct TriangleCell {
     int side;
 };
 
-
+// map ordering for cells
 bool operator<(const TriangleCell& a, const TriangleCell& b) {
     if (a.x1 != b.x1) return a.x1 < b.x1;
     if (a.y1 != b.y1) return a.y1 < b.y1;
@@ -29,22 +29,26 @@ bool operator<(const TriangleCell& a, const TriangleCell& b) {
     return a.side < b.side;
 }
 
-bool isSameCell(const TriangleCell& a, const TriangleCell& b){
+// exact cell match
+bool isSameCell(const TriangleCell& a, const TriangleCell& b) {
     return a.x1 == b.x1 && a.y1 == b.y1
         && a.x2 == b.x2 && a.y2 == b.y2
         && a.side == b.side;
 }
 
+// six direction steps
 const long long stepX[6] = {1, 0, -1, -1, 0, 1};
 const long long stepY[6] = {0, 1, 1, 0, -1, -1};
 
-GridPoint addPoints(const GridPoint& a,const GridPoint& b) {
+// add two points
+GridPoint addPoints(const GridPoint& a, const GridPoint& b) {
     GridPoint out;
     out.x = a.x + b.x;
     out.y = a.y + b.y;
     return out;
 }
 
+// subtract two points
 GridPoint subPoints(const GridPoint& a, const GridPoint& b) {
     GridPoint out;
     out.x = a.x - b.x;
@@ -52,23 +56,27 @@ GridPoint subPoints(const GridPoint& a, const GridPoint& b) {
     return out;
 }
 
-GridPoint dirAsPoint(int dirId){
+// direction id to step point
+GridPoint dirAsPoint(int dirId) {
     GridPoint out;
     out.x = stepX[dirId];
     out.y = stepY[dirId];
     return out;
 }
 
-long long cross2D(const GridPoint& a, const GridPoint& b){
+// 2d cross product
+long long cross2D(const GridPoint& a, const GridPoint& b) {
     return a.x * b.y - a.y * b.x;
 }
 
+// lexicographic point compare
 bool isEarlierPoint(const GridPoint& a, const GridPoint& b) {
     if (a.x != b.x) return a.x < b.x;
     return a.y < b.y;
 }
 
-int findDirIndex(const GridPoint& v){
+// find direction index
+int findDirIndex(const GridPoint& v) {
     for (int i = 0; i < 6; i++) {
         if (stepX[i] == v.x && stepY[i] == v.y) {
             return i;
@@ -77,6 +85,7 @@ int findDirIndex(const GridPoint& v){
     return -1;
 }
 
+// normalize and build a cell
 TriangleCell makeCell(GridPoint p, GridPoint q, GridPoint third) {
     if (isEarlierPoint(q, p)) {
         swap(p, q);
@@ -95,7 +104,8 @@ TriangleCell makeCell(GridPoint p, GridPoint q, GridPoint third) {
     return out;
 }
 
-GridPoint getThirdCorner(const TriangleCell& cell){
+// recover third corner of triangle
+GridPoint getThirdCorner(const TriangleCell& cell) {
     GridPoint a{cell.x1, cell.y1};
     GridPoint b{cell.x2, cell.y2};
     GridPoint edgeVec = subPoints(b, a);
@@ -105,11 +115,12 @@ GridPoint getThirdCorner(const TriangleCell& cell){
     if (cell.side == 0) {
         third = addPoints(a, dirAsPoint((dirId + 1) % 6));
     } else {
-      third = addPoints(a, dirAsPoint((dirId + 5) % 6));
+        third = addPoints(a, dirAsPoint((dirId + 5) % 6));
     }
     return third;
 }
 
+// list 3 adjacent cells
 void gatherNeighbors(const TriangleCell& curCell, TriangleCell nextCells[3]) {
     GridPoint a{curCell.x1, curCell.y1};
     GridPoint b{curCell.x2, curCell.y2};
@@ -126,12 +137,13 @@ void gatherNeighbors(const TriangleCell& curCell, TriangleCell nextCells[3]) {
     nextCells[2] = viaCenterB;
 }
 
+// parse input triple into a cell
 TriangleCell inputToCell(long long x, long long y, int z) {
     GridPoint base{x, y};
     int wedge = z / 2;
 
     GridPoint p, q, r;
-    if (!(z & 1)){
+    if (!(z & 1)) {
         p = base;
         q = addPoints(base, dirAsPoint(wedge));
         r = addPoints(base, dirAsPoint((wedge + 1) % 6));
@@ -144,7 +156,8 @@ TriangleCell inputToCell(long long x, long long y, int z) {
     return makeCell(p, q, r);
 }
 
-int bfsDistanceBetween(const TriangleCell& startCell, const TriangleCell& goalCell){
+// bfs distance between two cells
+int bfsDistanceBetween(const TriangleCell& startCell, const TriangleCell& goalCell) {
     if (isSameCell(startCell, goalCell)) {
         return 0;
     }
@@ -181,26 +194,31 @@ int bfsDistanceBetween(const TriangleCell& startCell, const TriangleCell& goalCe
     return -1;
 }
 
-int main(){
+// solve test cases
+int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    int t; cin >> t;
+    int t;
+    cin >> t;
     while (t--) {
-        int n; cin >> n;
+        int n;
+        cin >> n;
         vector<TriangleCell> cells(n);
 
         for (int i = 0; i < n; i++) {
-            long long x, y; int z;
+            long long x, y;
+            int z;
             cin >> x >> y >> z;
             cells[i] = inputToCell(x, y, z);
         }
 
         long long pairSum = 0;
-        
-        for (int i = 0; i < n; i++)
-            for (int j = i + 1; j < n; j++)
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
                 pairSum += bfsDistanceBetween(cells[i], cells[j]);
+            }
+        }
 
         cout << pairSum << '\n';
     }
