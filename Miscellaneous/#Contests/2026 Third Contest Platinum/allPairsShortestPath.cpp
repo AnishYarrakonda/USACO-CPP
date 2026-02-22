@@ -1,11 +1,17 @@
+// Programmer: Anish Yarrakonda
+// Date: Feb 21, 2026
+
+// set up
 #include <bits/stdc++.h>
 using namespace std;
 
+// point struct
 struct GridPoint{
     long long x;
     long long y;
 };
 
+// triangle cell id
 struct TriangleCell {
     long long x1;
     long long y1;
@@ -14,6 +20,7 @@ struct TriangleCell {
     int side;
 };
 
+// map ordering
 bool operator<(const TriangleCell& a, const TriangleCell& b) {
     if (a.x1 != b.x1) return a.x1 < b.x1;
     if (a.y1 != b.y1) return a.y1 < b.y1;
@@ -22,15 +29,18 @@ bool operator<(const TriangleCell& a, const TriangleCell& b) {
     return a.side < b.side;
 }
 
+// exact same cell
 bool isSameCell(const TriangleCell& a, const TriangleCell& b){
     return a.x1 == b.x1 && a.y1 == b.y1
         && a.x2 == b.x2 && a.y2 == b.y2
         && a.side == b.side;
 }
 
+// 6 grid directions
 const long long stepX[6] = {1, 0, -1, -1, 0, 1};
 const long long stepY[6] = {0, 1, 1, 0, -1, -1};
 
+// add vectors
 GridPoint addPoints(const GridPoint& a,const GridPoint& b) {
     GridPoint out;
     out.x = a.x + b.x;
@@ -38,6 +48,7 @@ GridPoint addPoints(const GridPoint& a,const GridPoint& b) {
     return out;
 }
 
+// subtract vectors
 GridPoint subPoints(const GridPoint& a, const GridPoint& b) {
     GridPoint out;
     out.x = a.x - b.x;
@@ -45,6 +56,7 @@ GridPoint subPoints(const GridPoint& a, const GridPoint& b) {
     return out;
 }
 
+// direction to point
 GridPoint dirAsPoint(int dirId){
     GridPoint out;
     out.x = stepX[dirId];
@@ -52,15 +64,18 @@ GridPoint dirAsPoint(int dirId){
     return out;
 }
 
+// 2d cross product
 long long cross2D(const GridPoint& a, const GridPoint& b){
     return a.x * b.y - a.y * b.x;
 }
 
+// lexicographic compare
 bool isEarlierPoint(const GridPoint& a, const GridPoint& b) {
     if (a.x != b.x) return a.x < b.x;
     return a.y < b.y;
 }
 
+// find direction index
 int findDirIndex(const GridPoint& v){
     for (int i = 0; i < 6; i++) {
         if (stepX[i] == v.x && stepY[i] == v.y) {
@@ -70,6 +85,7 @@ int findDirIndex(const GridPoint& v){
     return -1;
 }
 
+// normalize a cell id
 TriangleCell makeCell(GridPoint p, GridPoint q, GridPoint third) {
     if (isEarlierPoint(q, p)) {
         swap(p, q);
@@ -88,6 +104,7 @@ TriangleCell makeCell(GridPoint p, GridPoint q, GridPoint third) {
     return out;
 }
 
+// recover third corner
 GridPoint getThirdCorner(const TriangleCell& cell){
     GridPoint a{cell.x1, cell.y1};
     GridPoint b{cell.x2, cell.y2};
@@ -103,6 +120,7 @@ GridPoint getThirdCorner(const TriangleCell& cell){
     return third;
 }
 
+// list 3 adjacent cells
 void gatherNeighbors(const TriangleCell& curCell, TriangleCell nextCells[3]) {
     GridPoint a{curCell.x1, curCell.y1};
     GridPoint b{curCell.x2, curCell.y2};
@@ -119,6 +137,7 @@ void gatherNeighbors(const TriangleCell& curCell, TriangleCell nextCells[3]) {
     nextCells[2] = viaCenterB;
 }
 
+// parse input into cell
 TriangleCell inputToCell(long long x, long long y, int z) {
     GridPoint base{x, y};
     int wedge = z / 2;
@@ -137,6 +156,7 @@ TriangleCell inputToCell(long long x, long long y, int z) {
     return makeCell(p, q, r);
 }
 
+// bfs distance on cell graph
 int bfsDistanceBetween(const TriangleCell& startCell, const TriangleCell& goalCell){
     if (isSameCell(startCell, goalCell)) {
         return 0;
@@ -174,6 +194,7 @@ int bfsDistanceBetween(const TriangleCell& startCell, const TriangleCell& goalCe
     return -1;
 }
 
+// solve each test
 int main(){
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
